@@ -1,0 +1,218 @@
+function showLoginScreen() {
+  const loginScreen = document.getElementById('login-screen');
+  const usernameInput = document.getElementById('username');
+  const startBtn = document.getElementById('start-btn');
+
+  startBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    const username = usernameInput.value;
+    if (username) {
+      startGame(username);
+    }
+  });
+
+  loginScreen.classList.remove('hidden');
+} 
+
+// Функция для игрового экрана
+function showGameScreen(username) {
+  const gameScreen = document.getElementById('game-screen');
+  const usernameDisplay = document.getElementById('username-display');
+  const currentTimeDisplay = document.getElementById('current-time-display');
+  const timeSpentDisplay = document.getElementById('time-spent-display');
+  const livesCounter = document.getElementById('lives-counter');
+
+  usernameDisplay.textContent = username;
+  currentTimeDisplay.textContent = new Date().toLocaleTimeString();
+  timeSpentDisplay.textContent = '00:00';
+  livesCounter.textContent = lives;
+
+  gameScreen.classList.remove('hidden');
+  startGameLoop();
+}
+
+// Функция для начала игры
+function startGame(username) {
+  showGameScreen(username);
+  startTime = Date.now();
+  intervalId = setInterval(updateTime, 1000);
+  monsterIntervalId = setInterval(generateMonsters, 3000);
+  trapIntervalId = setInterval(generateTraps, 3000);
+  window.addEventListener('keydown', movePlayer);
+}
+
+// Функция для обновления времени
+function updateTime() {
+  const now = new Date();
+  currentTimeDisplay.textContent = now.toLocaleTimeString();
+  const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+  const minutes = Math.floor(timeSpent / 60).toString().padStart(2, '0');
+  const seconds = (timeSpent % 60).toString().padStart(2, '0');
+  timeSpentDisplay.textContent = `${minutes}:${seconds}`;
+}
+
+// Функция для генерации монстров и ловушек
+function generateMonsters() {
+  const monster = createMonster();
+  monsters.push(monster);
+  gameMap.appendChild(monster);
+}
+
+// Функция для генерации ловушек
+function generateTraps() {
+  const trap = createTrap();
+  traps.push(trap);
+  gameMap.appendChild(trap);
+}
+
+// Функция для создания монстра
+function createMonster() {
+  const monster = document.createElement('div');
+  monster.classList.add('monster');
+  monster.style.position = 'absolute';
+  monster.style.width = '50px';
+  monster.style.height = '50px';
+  monster.style.backgroundColor = 'red'; // Пример цвета монстра
+  monster.style.left = `${Math.random() * (gameMap.offsetWidth - 50)}px`;
+  monster.style.top = `${Math.random() * (gameMap.offsetHeight - 50)}px`;
+  return monster;
+}
+
+// Функция для создания ловушки
+function createTrap() {
+  const trap = document.createElement('div');
+  trap.classList.add('trap');
+  trap.style.position = 'absolute';
+  trap.style.width = '50px';
+  trap.style.height = '50px';
+  trap.style.backgroundColor = 'green'; // Пример цвета ловушки
+  trap.style.left = `${Math.random() * (gameMap.offsetWidth - 50)}px`;
+  trap.style.top = `${Math.random() * (gameMap.offsetHeight - 50)}px`;
+  return trap;
+}
+
+
+
+// Функция для движения игрока
+function movePlayer(event) {
+  const player = document.getElementById('player');
+  const step = 10; // Шаг движения игрока
+
+  switch (event.key) {
+    case 'ArrowUp':
+      player.style.top = `${parseInt(player.style.top) - step}px`;
+      break;
+    case 'ArrowDown':
+      player.style.top = `${parseInt(player.style.top) + step}px`;
+      break;
+    case 'ArrowLeft':
+      player.style.left = `${parseInt(player.style.left) - step}px`;
+      break;
+    case 'ArrowRight':
+      player.style.left = `${parseInt(player.style.left) + step}px`;
+      break;
+  }
+
+// Функция для проверки столкновений игрока с монстрами и ловушками
+function checkCollisions() {
+  const player = document.getElementById('player');
+  const playerRect = player.getBoundingClientRect();
+
+  // Проверка столкновений с монстрами
+  monsters.forEach((monster, index) => {
+    const monsterRect = monster.getBoundingClientRect();
+    if (rectsIntersect(playerRect, monsterRect)) {
+      // Обработка столкновения с монстром
+      handleMonsterCollision();
+      // Удаление монстра из игры
+      gameMap.removeChild(monster);
+      monsters.splice(index, 1);
+    }
+  });
+
+  // Проверка столкновений с ловушками
+  traps.forEach((trap, index) => {
+    const trapRect = trap.getBoundingClientRect();
+    if (rectsIntersect(playerRect, trapRect)) {
+      // Обработка столкновения с ловушкой
+      handleTrapCollision();
+      // Удаление ловушки из игры
+      gameMap.removeChild(trap);
+      traps.splice(index, 1);
+    }
+  });
+}
+
+// Функция для обработки столкновения с монстром
+function handleMonsterCollision() {
+  // Уменьшение жизней игрока или вызов другого события
+  lives--;
+  livesCounter.textContent = lives;
+  // Проверка, не закончились ли жизни
+  if (lives <= 0) {
+    endGame();
+  }
+}
+
+// Функция для обработки столкновения с ловушкой
+function handleTrapCollision() {
+  // Выполнение действий при столкновении с ловушкой
+  // Например, уменьшение жизней или другие эффекты
+  lives--;
+  livesCounter.textContent = lives;
+  // Проверка, не закончились ли жизни
+  if (lives <= 0) {
+    endGame();
+  }
+}
+
+// Функция для завершения игры
+function endGame() {
+  clearIntervals();
+  showResultsScreen();
+}
+
+// Функция для очистки всех интервалов
+function clearIntervals() {
+  clearInterval(intervalId);
+  clearInterval(monsterIntervalId);
+  clearInterval(trapIntervalId);
+}
+
+// Обработчик события для кнопки "Начать заново"
+document.getElementById('restart-btn').addEventListener('click', restartGame);
+// Функция для пересечения двух прямоугольников
+function rectsIntersect(rect1, rect2) {
+  return !(rect2.left > rect1.right ||
+           rect2.right < rect1.left ||
+           rect2.top > rect1.bottom ||
+           rect2.bottom < rect1.top);
+}}
+
+// Функция для паузы игры
+function pauseGame() {
+  // Остановка интервалов
+  clearInterval(intervalId);
+  clearInterval(monsterIntervalId);
+  clearInterval(trapIntervalId);
+
+  // Удаление обработчика клавиатуры
+  window.removeEventListener('keydown', movePlayer);
+
+  // Вы можете добавить дополнительный код для отображения интерфейса паузы, если это необходимо
+}
+
+// Функция для возобновления игры
+function resumeGame() {
+  // Запуск интервалов
+  intervalId = setInterval(updateTime, 1000);
+  monsterIntervalId = setInterval(generateMonsters, 3000);
+  trapIntervalId = setInterval(generateTraps, 3000);
+
+  // Добавление обработчика клавиатуры
+  window.addEventListener('keydown', movePlayer);
+
+  // Вы можете добавить дополнительный код для скрытия интерфейса паузы, если это необходимо
+}
+
+
